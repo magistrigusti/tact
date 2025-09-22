@@ -1,48 +1,24 @@
 import { toNano } from "@ton/core";
-import { Blockchain } from "@ton/sandbox";
+import { Blockchain, SandboxContract, TreasuryContract } from "@ton/sandbox";
 import "@ton/test-utils";
-import { AddressBook } from "./output/sample_AddressBook";
+import { TactWallet, SendParameters } from "./output/sample_TactWallet";
 import { inspect } from "util";
+import { mnemonicNew, sign, mnemonicToWalletKey } from 'ton-crypto';
 
 describe("contract", () => {
     it("should deploy correctly", async () => {
-        // Create Sandbox and deploy contract
-        const system = await Blockchain.create();
-        const owner = await system.treasury("owner");
-        let someone = system.treasury("someone");
-        let contract = system.open(await AddressBook.fromInit(owner.address));
-
-        await contract.send(
-            owner, 
-            {value: toNano("0.1")},
-            {$$type: 'AddUserMessage', name: "owner", address: owner.address}
-        );      
-        await contract.send(
-            owner,
-            {value: toNano("0.1")},
-            {$$type: 'AddUserMesage', name: "someone", address: someone.address}
-        );  
-        await system.run();
-
-        await contract.send(
-            owner,
-            {value: toNano("0.1")},
-            {$$type: "ProxyMessage", message: "hello", to: "someone"}
+        let blockchain = await Blockchain.create();
+        let creator = blockchain.treasury("creator");
+        let mnemonics = await mnemonicNew();
+        let pair = await mnemonicToWalletKey(mnemonics);
+        let wallet = blockchain.openContract(
+            await TactWallet.fromInit(BigInt('0x' + pair.publicKey.toString("hex")))
         );
-        await contract.send(
-            someone,
-            {value: toNano("0.1")},
-            {$$type: "ProxyMessage", message: 'hello', to: "owner"}
+        await wallet.send((await creator).getSender(), {value: toNano(0.1)}, "Hello");
+        await blockchain.run(); // This line is causing the error. The 'run' method does not exist on the 'Blockchain' type.
+        expect(await wallet.getGetPublicKey()).toEqual(
+            BigInt('0x' + pair.publicKey.toString("hex"))
         );
-        await system.run();
-
-        await contract.send(
-            someone,
-            {value: toNano('0.1')},
-            "someone"
-        );
-        await system.run();
-
-        expect(contract_tracker.collect()).toMatchSnapshot();
+        expect(await wallet.getSeqno()).toEqual(0n);
     });
 });

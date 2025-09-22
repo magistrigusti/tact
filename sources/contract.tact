@@ -1,7 +1,14 @@
 import "@stdlib/ownable";
 import "@stdlib/deploy";
 
-contract TactWallet {
+message ExtMessage {
+    signature: Slice as bytes64;
+    seqno: Int as uint32;
+    valid_uint: Int as uint32;
+    message_parameters: SendParameters;
+}
+
+contract TactWallet with Deployable {
     seqno: Int as uint32 = 0;
     publicKey: Int as uint256;
 
@@ -13,8 +20,18 @@ contract TactWallet {
     receive(str: String) {}
     receive(slice: Slice) {}
 
-    external() {
-        
+    external(msg: ExtMessage) {
+        let hash: Int = beginCell()
+            .storeUint(msg.seqno, 32)
+            .storeUint(msg.valid_uint, 32)
+            .storeRef(msg.message_parameters.toCell())
+        .endCell().hash();
+        require(checkSignature(hash, msg.signature, self.publicKey), "Invalid Signature");
+        require(msg.seqno == self.seqno, "Invalid Seqno");
+        require(now() <= msg.valid_uint, "Invalid Time");
+        acceptMessage();
+        self.seqno = self.seqno + 1;
+        send(msg.message_parameters);
     }
 
     get fun seqno(): Int {
