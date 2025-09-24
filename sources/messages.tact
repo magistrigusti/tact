@@ -1,0 +1,39 @@
+import "@stdlib/ownable";
+import "@stdlib/deploy";
+
+message(0x0f817ea5) Transfer {
+  query_id: Int as uint64;
+  amount: Int as coins;
+  destination: Address;
+  response_destination: Address;
+  custom_payload: Cell?;
+  forward_ton_amount: Int as coins;
+  forward_payload: Cell;
+}
+
+message(0x178d4519) InternalTransfer {
+  query_id: Int as uint64;
+  amount: Int as coins;
+  from: Address;
+  response_destination: Address;
+  forward_ton_amount: Int as coins;
+  forward_payload: Cell;
+}
+
+message(0x7362d09c) TransferNotification {
+  query_id: Int as uint64;
+  amount: Int as coins;
+  sender: Address;
+  forward_payload: Cell;
+}
+
+message(0x53276db) Excesses {
+  query_id: Int as uint64;
+}
+
+message(0x595f07bc) Burn {
+  query_id: Int as uint64;
+  amount: Int as coins;
+  response_destination: Address;
+  custom_payload: Cell?;
+}
