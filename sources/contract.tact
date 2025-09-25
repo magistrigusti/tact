@@ -1,44 +1,60 @@
 import "@stdlib/ownable";
 import "@stdlib/deploy";
+import "./messages";
 
-message ExtMessage {
-    signature: Slice as bytes64;
-    seqno: Int as uint32;
-    valid_uint: Int as uint32;
-    message_parameters: SendParameters;
+const gasConsumption: Int = ton("0.01");
+const minTons: Int = ton("0.01");
+
+struct WalletData {
+    balance: Int;
+    owner: Address;
+    master: Address;
+    code: Cell;
 }
 
-contract TactWallet with Deployable {
-    seqno: Int as uint32 = 0;
-    publicKey: Int as uint256;
+contract TokenWallet {
+    balance: Int as coins = 0;
+    owner: Address;
+    master: Address;
 
-    init (publicKey: Int) {
-        self.publicKey = publicKey;
+    init(owner: Address, master: Address) {
+        self.owner = owner;
+        self.master = master;
     }
 
-    receive() {}
-    receive(str: String) {}
-    receive(slice: Slice) {}
-
-    external(msg: ExtMessage) {
-        let hash: Int = beginCell()
-            .storeUint(msg.seqno, 32)
-            .storeUint(msg.valid_uint, 32)
-            .storeRef(msg.message_parameters.toCell())
-        .endCell().hash();
-        require(checkSignature(hash, msg.signature, self.publicKey), "Invalid Signature");
-        require(msg.seqno == self.seqno, "Invalid Seqno");
-        require(now() <= msg.valid_uint, "Invalid Time");
-        acceptMessage();
-        self.seqno = self.seqno + 1;
-        send(msg.message_parameters);
+    receive(msg: Transfer) {
+        let ctx: Context = context();
+        require(self.owner == ctx.sender, "Invalid sender");
+        self.balance = self.balance - msg.amount;
+        require(self.balance >= 0, "Invalid token amount");
+        require(
+            ctx.readForwardFee() * 2 + 2 * gasConsumption 
+            + minTons + msg.forward_ton_amount < ctx.value,
+            "Invalid ton amount"
+        );
+        let to: Address = contractAddress(initOf TokenWallet(self.owner, self.master));
+        send(SendParameters {
+            to: to,
+            value: 0,
+            mode: SendRemainingValue,
+            bounce: false,
+            body: InternalTransfer{
+                query_id: msg.query_id,
+                amount: msg.amount,
+                from: self.owner,
+                response_destination: msg.response_destination,
+                forward_ton_amount: msg.forward_ton_amount,
+                forward_payload: msg.forward_payload
+            }.toCell()
+        });
     }
 
-    get fun seqno(): Int {
-        return self.seqno;
-    }
-
-    get fun get_public_key(): Int {
-        return self.publicKey;
+    get fun get_wallet_data(): WalletData {
+        return WalletData{
+            balance: self.balance, 
+            owner: self.owner, 
+            master: self.master, 
+            code: (initOf TokenWallet(self.owner, self.master)).code
+        };
     }
 }
