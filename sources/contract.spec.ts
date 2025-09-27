@@ -2,6 +2,7 @@ import { beginCell, toNano } from "@ton/core";
 import { Blockchain } from "@ton/sandbox";
 import "@ton/test-utils";
 import { TokenWallet } from "./output/sample_TokenWallet";
+
 import { inspect } from "util";
 
 describe('contract', () => {

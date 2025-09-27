@@ -1,19 +1,19 @@
 {
+    "compiler": {
+        "optLevel": 2,
+        "platform": "tvm",
+        "version": "0.1.0"
+    },
     "projects": [
         {
-            "name": "sample",
-            "path": "./sources/contract.tact",
-            "output": "./sources/output",
-            "mode": "full",
-            "options": {
-                "external": true,
-                "debug": false,
-                "ipfsAbiGetter": false,
-                "interfacesGetter": false,
-                "experimental": {
-                    "inline": false
-                }
-            }
+            "name": "nft",
+            "path": "./sources/nft.tact",
+            "output": "./sources/output"
+        },
+        {
+            "name": "master",
+            "path": "./sources/master.tact",
+            "output": "./sources/output"
         }
     ]
 }
