@@ -47,11 +47,11 @@ message(0x7bdd97de) BurnNotification {
 
 // master 
 
-message ChangeContent {
+message(0x10590ef2) ChangeContent {
   jetton_content: Cell; 
 }
 
-message Mint {
+message(0xf8f2859b) Mint {
   query_id: Int as uint64;
   amount: Int as coins;
 }
