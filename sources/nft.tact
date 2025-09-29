@@ -5,7 +5,36 @@ import "./messages";
 const min_balance: Int = ton("0.05");
 const gas_consumption: Int = ton("0.02");
 
+struct NftData {
+  deployed: Bool;
+  index: Int;
+  collection: Address;
+  owner: Address;
+  content: Cell;
+}
+
+trait NftRoyalty {
+  royalty_destination: Address;
+  numerator: Int;
+  denominator: Int;
+
+  receive(msg: NftGetRoyaltyParams) {
+    send(SendParameters {
+      to: sender(),
+      value: 0,
+      mode: SendRemainingValue,
+      body: NftReportRoyaltyParams {
+        query_id: msg.query_id,
+        numerator: self.numerator,
+        denominator: self.denominator,
+        destination: self.royalty_destination
+      }.toCell()
+    });
+  }
+}
+
 trait NftStandart {
+  deployed: Bool;
   collection: Address;
   owner: Address;
   index: Int;
@@ -13,6 +42,7 @@ trait NftStandart {
 
   receive(msg: NftTransfer) { 
     let ctx: Context = context();
+    require(self.deployed, "Not Deployed");
     require(ctx.sender == self.owner, "Invalid Owner");
     let min: Int = min_balance - min(min_balance, myBalance());
     let required: Int = gas_consumption + msg.forward_amount + min;
@@ -45,19 +75,59 @@ trait NftStandart {
       });
     }
   }
+
+  receive(msg: NftGetStaticData) {
+    send(SendParameters {
+      to: sender(),
+      value: 0,
+      mode: SendRemainingValue,
+      body: NftReportStaticData {
+        query_id: msg.query_id,
+        index: self.index,
+        collection: self.collection
+      }.toCell()
+    });
+  }
+
+  get fun get_nft_data(): NftData {
+    return NftData {
+      deployed: self.deployed,
+      index: self.index,
+      collection: self.collection,
+      owner: self.owner,
+      content: self.content
+    };
+  }
 }
 
-contract NftItem {
+contract NftItem with NftStandart, NftRoyalty {
+  deployed: Bool = false;
   collection: Address;
   owner: Address;
-  index: Int as uint256;
+  index: Int;
   content: Cell;
+  royalty_destination: Address;
+  numerator: Int;
+  denominator: Int;
 
-  init(collection: Address, owner: Address, index: Int, content: Cell) {
+  init(
+    collection: Address, 
+    owner: Address, 
+    index: Int, 
+    content: Cell,
+    royalty_destination: Address,
+    numerator: Int,
+    denominator: Int
+    ) {
     require(collection == sender(), "Invalid Sender");
     self.collection = collection;
     self.owner = owner;
     self.index = index;
     self.content = content;
+    self.deployed = true;
+
+    self.royalty_destination = royalty_destination;
+    self.numerator = numerator;
+    self.denominator = denominator;
   }
 }

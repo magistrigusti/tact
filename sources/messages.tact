@@ -27,3 +27,14 @@ message(0x567f713c) NftReportStaticData {
   collection: Address;
 }
 
+message NftGetRoyaltyParams {
+  query_id: Int as uint64;
+}
+
+message NftReportRoyaltyParams {
+  query_id: Int as uint64;
+  numerator: Int as uint16;
+  denominator: Int as uint16;
+  destination: Address;
+}
+
