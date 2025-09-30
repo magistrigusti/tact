@@ -13,6 +13,12 @@ struct NftData {
   content: Cell;
 }
 
+struct NftRoyaltyParams {
+  numerator: Int;
+  denominator: Int;
+  royalty_destination: Address;
+}
+
 trait NftRoyalty {
   royalty_destination: Address;
   numerator: Int;
@@ -30,6 +36,14 @@ trait NftRoyalty {
         destination: self.royalty_destination
       }.toCell()
     });
+  }
+
+  get fun royalty_params(): NftRoyaltyParams {
+    return NftRoyaltyParams {
+      numerator: self.numerator, 
+      denominator: self.denominator,
+      royalty_destination: self.royalty_destination
+    }
   }
 }
 
@@ -129,5 +143,18 @@ contract NftItem with NftStandart, NftRoyalty {
     self.royalty_destination = royalty_destination;
     self.numerator = numerator;
     self.denominator = denominator;
+  }
+
+  receive(msg: NftDestroy) {
+    require(sender() == self.owner, "Invalid Owner");
+    self.owner = myAddress();
+    send(SendParameters {
+      to: sender(),
+      value: 0,
+      mode: SendRemainingBalance,
+      body: NftExcesses {
+        query_id: msg.query_id
+      }.toCell()
+    });
   }
 }

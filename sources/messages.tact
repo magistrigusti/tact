@@ -13,7 +13,7 @@ message(0x1155558e) NftOwnershipAssigned {
   forward_payload: Cell;
 }
 
-message NftExcesses {
+message(0xeb03d2f8) NftExcesses {
   query_id: Int as uint64;
 }
 
@@ -27,14 +27,17 @@ message(0x567f713c) NftReportStaticData {
   collection: Address;
 }
 
-message NftGetRoyaltyParams {
+message(0xfea554d6) NftGetRoyaltyParams {
   query_id: Int as uint64;
 }
 
-message NftReportRoyaltyParams {
+message(0x4341e4b0) NftReportRoyaltyParams {
   query_id: Int as uint64;
   numerator: Int as uint16;
   denominator: Int as uint16;
   destination: Address;
 }
 
+message(0xacf1d041) NftDestroy {
+  query_id: Int as uint64;
+}
