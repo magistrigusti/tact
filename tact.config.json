@@ -9,6 +9,11 @@
             "name": "nft",
             "path": "./sources/nft.tact",
             "output": "./sources/output"
+        },
+        {
+            "name": "messages",
+            "path": "./sources/messages.tact",
+            "output": "./sources/output"
         }
     ]
 }

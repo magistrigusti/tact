@@ -114,7 +114,7 @@ trait NftStandart {
   }
 }
 
-contract NftItem with NftStandart, NftRoyalty {
+contract NftItem with NftStandart, NftRoyalty, Deployable {
   deployed: Bool = false;
   collection: Address;
   owner: Address;
