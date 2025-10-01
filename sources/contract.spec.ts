@@ -13,7 +13,7 @@ describe("conteract", () => {
       await NftItem.fromInit(
         master.address, 
         owner.address, 0n, 
-        beginCell().endCell(), 
+        beginCell().storeUint(10, 8).endCell(), 
         master.address, 5n, 100n
       )
     );
@@ -28,6 +28,38 @@ describe("conteract", () => {
     let result = await nft.getGetNftData();
     expect(result.deployed).toBeTruthy();
     expect(result.index).toEqual(0n);
+    expect(result.collection.equals(master.address)).toBeTruthy();
+    expect(result.owner.equals(owner.address)).toBeTruthy();
+    expect(result.content.equals(beginCell().storeUint(10, 8).endCell())).toBeTruthy();
+
+    const owner_2 = system.treasury('owner_2');
+    await nft.send(owner, 
+      {value: toNano("0.15")},
+      {
+        $$type: "NftTransfer",
+        query_id: 1n, new_owner: owner_2.address,
+        response_destination: owner.address,
+        custom_payload: beginCell()
+          .storeUint(0,32)
+          .storeStringTail("Hello to Nothing")
+        .endCell(),
+        forward_amount: toNano("0.05"),
+        forward_payload: beginCell()
+          .storeUint(0, 32)
+          .storeStringTail("Hello to new owner")
+        .endCell(),
+      }
+    );
+
+    nft_events = nft_tracker.collection();
+    console.log(inspect(nft_events, true, null, true));
+    result = await nft.getGetNftData();
+    expect(result.owner.equals(owner_2.address)).toBeTruthy();
+    await nft.send(owner_2,
+      {value: toNano("0.2")},
+      {$$type: 'NftDestroy', query_id: 1n}
+    );
+    nft_events = nft_tracker.collect()
   });
 });
 

@@ -114,35 +114,38 @@ trait NftStandart {
   }
 }
 
-contract NftItem with NftStandart, NftRoyalty, Deployable {
+contract NftItem with NftStandart, NftRoyalty {
   deployed: Bool = false;
   collection: Address;
   owner: Address;
   index: Int;
   content: Cell;
   royalty_destination: Address;
-  numerator: Int;
-  denominator: Int;
+  numerator: Int = 0;
+  denominator: Int = 1;
 
-  init(
-    collection: Address, 
-    owner: Address, 
-    index: Int, 
-    content: Cell,
-    royalty_destination: Address,
-    numerator: Int,
-    denominator: Int
-    ) {
-    require(collection == sender(), "Invalid Sender");
+  init( collection: Address, index: Int, ) {
     self.collection = collection;
-    self.owner = owner;
     self.index = index;
-    self.content = content;
+
+    self.owner = self.collection;
+    self.content = emptyCell();
     self.deployed = true;
 
-    self.royalty_destination = royalty_destination;
-    self.numerator = numerator;
-    self.denominator = denominator;
+    self.royalty_destination = self.collection;
+  }
+
+  receive(msg: NftDeploy) {
+    require(sender() == self.collection, "Invalid Sender");
+    require(self.index == msg.index, "Invalid Index");
+    require(!self.deployed, "Already deployed");
+    self.owner = msg.owner;
+    self.content = msg.content;
+    self.deployed = true;
+
+    self.royalty_destination = msg.royalty_destination;
+    self.numerator = msg.numerator;
+    self.denominator = msg.denominator;
   }
 
   receive(msg: NftDestroy) {
