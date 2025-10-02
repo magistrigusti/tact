@@ -50,3 +50,11 @@ message NftDeploy {
   numerator: Int as uint16;
   denominator: Int as uint16;
 }
+
+message RequestNftDeploy {
+  index: Int as uint256;
+  amount: Int as coins;
+  owner: Address;
+  content: Cell;
+  
+}
