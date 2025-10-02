@@ -1,15 +1,17 @@
 import * as fs from "fs";
 import * as path from "path";
 import { Address, contractAddress } from "@ton/core";
-import { Proxy } from "./output/sample_Proxy";
+import { NftCollection } from "./output/collection_NftCollection";
 import { prepareTactDeployment } from "@tact-lang/deployer";
+import { createOffchainContent } from './helpers';
 
 (async (): Promise<void> => {
     // Parameters
     let testnet = true;
-    let packageName = "sample_Proxy.pkg";
-    let owner = Address.parse("kQBM7QssP28PhrctDOyd47_zpFfDiQvv5V9iXizNopb1d2LB");
-    let init = await Proxy.init(owner);
+    let packageName = "collection_NftCollection.pkg";
+    let owner = Address.parse("");
+    let content = createOffchainContent("")
+    let init = await NftCollection.init(owner, content, owner, 21n, 1000n);
 
     // Load required data
     let address = contractAddress(0, init);

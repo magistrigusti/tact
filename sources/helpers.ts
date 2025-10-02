@@ -3,7 +3,7 @@ import { Blockchain, SandboxContract, TreasuryContract } from "@ton/sandbox";
 import "@ton/test-utils";
 import { TactWallet, SendParameters, storeSendParameters, ExtMessage } from "./output/sample_TactWallet";
 import { inspect } from "util";
-import { mnemonicNew, sign, mnemonicToWalletKey } from 'ton-crypto';
+import { mnemonicNew, sign, mnemonicToWalletKey } from '@ton/crypto';
 
 export function fill_send_parameters(
   to: Address, value: bigint, body: Cell, 
@@ -33,4 +33,8 @@ export async function send_ext_message(
     seqno, valid_until, 
     params: params
   });
+}
+
+export function createOffchainContent(str: string) {
+  return beginCell().storeUint(1, 8).storeStringTail(str).endCell();
 }
