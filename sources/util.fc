@@ -1,0 +1,4 @@
+
+slice service_address() {
+  return "address";
+}

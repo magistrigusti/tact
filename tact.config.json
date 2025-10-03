@@ -6,8 +6,8 @@
     },
     "projects": [
         {
-            "name": "nft",
-            "path": "./sources/nft.tact",
+            "name": "SaleNft",
+            "path": "./sources/SaleNft.tact",
             "output": "./sources/output"
         },
         {
