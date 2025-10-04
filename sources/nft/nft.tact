@@ -1,6 +1,6 @@
 import "@stdlib/ownable";
 import "@stdlib/deploy";
-import "./messages";
+import "./nft/messages";
 
 const min_balance: Int = ton("0.05");
 const gas_consumption: Int = ton("0.02");

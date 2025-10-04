@@ -1,7 +1,7 @@
 import "@stdlib/ownable";
 import "@stdlib/deploy";
-import "./messages";
-import "./nft";
+import "../messages";
+import "./nft/nft";
 
 struct CollectionData {
   next_index: Int;
