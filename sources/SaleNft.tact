@@ -25,10 +25,12 @@ contract SaleNft with Ownable {
   denominator: Int as uint16;
   royalty_destination: Address?;
   sale_ended: Bool = false;
+  price: Int;
 
   init(
     owner: Address, 
     nft: Address, 
+    price: Int,
     jetton_master: Address,
     numerator: Int,
     denominator: Int,
@@ -37,9 +39,60 @@ contract SaleNft with Ownable {
       self.owner = owner;
       self.nft = nft;
       self.jetton_master = jetton_master;
+      self.royalty_destination = royalty_destination;
       self.numerator = numerator;
       self.denominator = denominator;
-      self.royalty_destination: royalty_destination
+      if (self.royalty_destination == null || denominator == 0) {
+        self.numerator = 0;
+        self.denominator = 1;
+      }
+      send(SendParameters {
+        to: self.jetton_master,
+        value: 0,
+        mode: SendRemainingValue,
+        body: ProvideWalletAddress {
+          query_id: now(),
+          owner_address: myAddress(),
+          include_address: true
+        }.toCell()
+      });
+  }
+
+  receive(msg: TakeWalletAddress) {
+    let ctx: Content = content();
+    require(ctx.sender == self.jetton_master, "Invalid sender");
+    self.jetton_wallet = msg.wallet_address;
+  }
+
+  receive(msg: NftOwnershipAssigned) {
+    let ctx: Context = context();
+    if (ctx.sender != self.nft) {
+      send(SendParameters {
+        to: ctx.sender,
+        value: 0,
+        mode: SendRemainingValue,
+        body: NftTransfer {
+          query_id: msg.query_id,
+          new_owner: msg.prev_owner,
+          response_destination: msg.prev_owner,
+          custom_payload: "Invalid Nft".asComment(),
+          forward_amount: 0,
+          forward_payload: emptySlice()
+        }.toCell()
+      });
+    } else {
+      self.nft_received = true;
+    }
+  }
+
+  receive(msg: TransferNotification) {
+    let ctx: Content = context();
+    if (ctx.sender != self.jetton_wallet || self.nft_received == false || self.sale_ended) {
+      send(SendParameters {
+        to: ctx.sender,
+        value
+      })
+    }
   }
 
   receive(msg: Deploy) {

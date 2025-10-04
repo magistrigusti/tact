@@ -42,7 +42,7 @@ message(0xacf1d041) NftDestroy {
   query_id: Int as uint64;
 }
 
-message NftDeploy {
+message(0xe5e502a3) NftDeploy {
   index: Int;
   owner: Address;
   content: Cell;
@@ -51,11 +51,40 @@ message NftDeploy {
   denominator: Int as uint16;
 }
 
-message RequestNftDeploy {
+message(0x5412742a) RequestNftDeploy {
   index: Int as uint256;
   amount: Int as coins;
   owner: Address;
   content: Cell;
   
+}
+
+message(0x502bcd76) ProvideWalletAddress {
+  query_id: Int as uint64;
+  owner_adress: Address;
+  include_adress: Bool;
+}
+
+message(0x5b4d481c) TakeWalletAddress {
+  query_id: Int as uint64;
+  wallet_address: Address;
+  owner_address: Address?;
+}
+
+message Transfer {
+  query_id: Int as uint64;
+  amount: Int as coins;
+  destination: Address;
+  response_destination: Address;
+  custom_payload: Cell?;
+  forward_ton_amount: Int as coins;
+  forward_payload: Slice as remaining;
+}
+
+message TransferNotification {
+  query_id: Int as uint64;
+  amount: Int as coins;
+  sender: Address;
+  forward_payload: Slice as remaining;
 }
 
