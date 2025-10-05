@@ -15,6 +15,9 @@ const hundred_percent: Int = 100000000000;
 @name(service_address)
 native serviceAddress(): Address;
 
+@name(muidiv)
+native mulDiv(a: Int, b: Int, c: Int): Int;
+
 contract SaleNft with Ownable {
   owner: Address;
   nft: Address;
@@ -38,6 +41,7 @@ contract SaleNft with Ownable {
     ) {
       self.owner = owner;
       self.nft = nft;
+      self.price = price;
       self.jetton_master = jetton_master;
       self.royalty_destination = royalty_destination;
       self.numerator = numerator;
@@ -46,6 +50,7 @@ contract SaleNft with Ownable {
         self.numerator = 0;
         self.denominator = 1;
       }
+
       send(SendParameters {
         to: self.jetton_master,
         value: 0,
@@ -66,6 +71,7 @@ contract SaleNft with Ownable {
 
   receive(msg: NftOwnershipAssigned) {
     let ctx: Context = context();
+    
     if (ctx.sender != self.nft) {
       send(SendParameters {
         to: ctx.sender,
@@ -87,15 +93,57 @@ contract SaleNft with Ownable {
 
   receive(msg: TransferNotification) {
     let ctx: Content = context();
-    if (ctx.sender != self.jetton_wallet || self.nft_received == false || self.sale_ended) {
+    let sale_fee: Int = mulDiv(
+      self.price,
+      mulDiv(service_numerator, hundred_percent, service_denominator),
+      hundred_percent
+      );
+    let royalty_fee: Int = mulDiv(
+      self.price,
+      mulDiv(self.numerator, hundred_percent, self.denominator),
+      hundred_percent
+    );
+    let full_price = self.price + sale_fee + royalty_fee;
+    if (ctx.sender != self.jetton_wallet 
+      || self.nft_received == false 
+      || self.sale_ended
+      || ctx.value < sale_processing_value
+      || msg.amount >= full_price
+    ) {
       send(SendParameters {
         to: ctx.sender,
-        value
-      })
+        value: 0,
+        mode: SendRemainingValue,
+        body: Transfer {
+          query_id: msg.query_id,
+          amount: msg.amount,
+          destination: msg.sender,
+          response_destination: msg.sender,
+          custom_payload: "Error occured".asComment(),
+          forward_ton_amount: 0,
+          forward_payload: emptySlice()
+        }.toCell();
+      });
+      return;
     }
+
   }
 
   receive(msg: Deploy) {
 
+  }
+
+  fun send_jetton(
+    to: Address, value: Int, mode: Int, query_id: Int, amount: Int,
+    destination: Address, response_destination: Address,
+    custom_payload: Cell,
+    ) {
+      if (value > 0) {
+        send(SendParameters {
+          to: to,
+          value: value,
+          mode: mode
+        })
+      }
   }
 }
