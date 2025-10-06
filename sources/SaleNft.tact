@@ -124,9 +124,77 @@ contract SaleNft with Ownable {
           forward_payload: emptySlice()
         }.toCell();
       });
+      self.send_jetton(
+        ctx.sender, 0, 
+        SendRemainingValue, 
+        msg.query_id,
+        msg.amount,
+        msg.sender,
+        "Error occured".asComment()
+      );
       return;
     }
 
+    if (msg.amount > full_price) {
+      self.send_jetton(
+        ctx.sender, 
+        jetton_transfer_value, 0,
+        SendRemainingValue,
+        msg.query_id,
+        msg.amount - full_price,
+        msg.sender,
+        "Error occured".asComment()
+      );
+
+      ctx.value = ctx.value - jetton_transfer_value;
+    }
+
+    self.send_jetton(
+      ctx.sender,
+      jetton_transfer_value, 0,
+      SendRemainingValue,
+      msg.query_id,
+      sale_fee,
+      serviceAddress(),
+      msg.sender,
+      emptyCell()
+    );
+
+    if (self.royalty_destination != null) {
+      self.send_jetton(
+      ctx.sender,
+      jetton_transfer_value, 0
+      msg.query_id,
+      royalty_fee,
+      self.destination!!,
+      msg.sender,
+      "Error occured".asComment(),
+      );
+
+      ctx.value = ctx.value - jetton_transfer_value;
+    }
+
+    self.send_jetton(
+      ctx.sender,
+      jetton_transfer_value, 0,
+      msg.query_id,
+      self.price, 
+      self.owner,
+      msg.sender,
+      emptyCell()
+    );
+    send(SendParameters {
+      to: self.nft,
+      value: nft_transfer_value,
+      body: NftTransfer {
+        query_id: msg.query_id,
+        new_owner: msg.sender,
+        response_destination: msg.sender,
+        custom_payload: "Nft received".asComment(),
+        forward_amount: 0,
+        forward_payload: emptySlice()
+      }.toCell()
+    })
   }
 
   receive(msg: Deploy) {
@@ -142,7 +210,16 @@ contract SaleNft with Ownable {
         send(SendParameters {
           to: to,
           value: value,
-          mode: mode
+          mode: mode,
+          body: Transfer {
+            query_id: query_id, 
+            amount: amount,
+            destination: destination,
+            response_destination: response_destination,
+            custom_payload: custom_payload,
+            forward_ton_amount: 0,
+            forward_payload: emptySlice()
+          }.toCell()
         })
       }
   }
