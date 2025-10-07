@@ -18,6 +18,15 @@ native serviceAddress(): Address;
 @name(muidiv)
 native mulDiv(a: Int, b: Int, c: Int): Int;
 
+struct PriceInfo {
+  price: Int;
+  full_price: Int;
+  royalty_fee: Int;
+  royalty_destination: Address;
+  service_fee: Int;
+  service_address: Address;
+}
+
 contract SaleNft with Ownable {
   owner: Address;
   nft: Address;
@@ -28,7 +37,7 @@ contract SaleNft with Ownable {
   denominator: Int as uint16;
   royalty_destination: Address?;
   sale_ended: Bool = false;
-  price: Int;
+  price: Int as coins;
 
   init(
     owner: Address, 
@@ -159,6 +168,7 @@ contract SaleNft with Ownable {
       msg.sender,
       emptyCell()
     );
+    ctx.value = ctx.value - jetton_transfer_value;
 
     if (self.royalty_destination != null) {
       self.send_jetton(
@@ -173,19 +183,10 @@ contract SaleNft with Ownable {
 
       ctx.value = ctx.value - jetton_transfer_value;
     }
-
-    self.send_jetton(
-      ctx.sender,
-      jetton_transfer_value, 0,
-      msg.query_id,
-      self.price, 
-      self.owner,
-      msg.sender,
-      emptyCell()
-    );
+    
     send(SendParameters {
       to: self.nft,
-      value: nft_transfer_value,
+      value: ctx.value,
       body: NftTransfer {
         query_id: msg.query_id,
         new_owner: msg.sender,
@@ -194,11 +195,42 @@ contract SaleNft with Ownable {
         forward_amount: 0,
         forward_payload: emptySlice()
       }.toCell()
-    })
+    });
+    self.nft_received = false;
+    self.send_jetton(
+      ctx.sender,
+      0, 
+      SendRemainingBalance,
+      msg.query_id,
+      self.price, 
+      self.owner,
+      msg.sender,
+      emptyCell()
+    );
+
+  }
+
+  receive("Cancel") {
+    self.requireOwner();
+    send(SendParameters {
+      to: self.nft,
+      value: 0,
+      mode: SendRemainingBalance,
+      body: NftTransfer{
+        query_id: msg.query_id,
+        new_owner: self.owner,
+        response_destination: msg.sender,
+        custom_payload: "Nft received".asComment(),
+        forward_amount: 0,
+        forward_payload: emptySlice()
+      }.toCell()
+    });
+    self.nft_received = false;
   }
 
   receive(msg: Deploy) {
-
+    self.requireOwner();
+    self.sale_ended = false;
   }
 
   fun send_jetton(
@@ -222,5 +254,51 @@ contract SaleNft with Ownable {
           }.toCell()
         })
       }
+  }
+
+  get fun get_price_info(): PriceInfo {
+    let service_fee: Int = mulDiv(self.price, muiDiv(
+      service_numerator, hendred_percent, service_denominator
+    ), hundred_percent);
+    let royalty_fee: Int = mulDiv(self.price, mulDiv(
+      self.numerator, hendred_percent, self.denominator
+    ), hundred_percent);
+    let full_price: Int = self.price + service_fee + royalty_fee;
+
+    return PriceInfo {
+      price: self.price,
+      full_price: full_price,
+      royalty_fee: royalty_fee,
+      royalty_destination: self.royalty_destination,
+      servise_fee: service_fee,
+      service_address: serviceAddress()
+    };
+  }
+
+  get fun get_sale_info(): SaleInfo {
+    let service_fee: Int = muiDiv(self.price, muiDiv(
+      service_numerator, hundred_percent, service_denominator
+    ), hundred_percent);
+    let royalty_fee: Int = mulDiv(self.price, mulDiv(
+      self.numerator, hundred_percent, self.denominator
+    ), hundred_percent);
+    let full_price: Int = self.price + service_fee + royalty_fee;
+
+    return SaleInfo {
+      sale_ended: self.sale_ended, 
+      owner: self.owner,
+      nft: self.nft,
+      nft_received: self.nft_received,
+      jetton_master: self.jetton_master,
+      jetton_wallet: self.jetton_wallet,
+      price_info: PriceInfo {
+        price: self.price,
+        full_price: full_price,
+        royalty_fee: royalty_fee,
+        royalty_destination: self.royalty_destination,
+        service_fee: service_fee,
+        service_address: serviceAddress()
+      }
+    }
   }
 }
